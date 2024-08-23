@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ chatroom.name }}{% endblock %}
+{% block content %}
+  <h1>{{ chatroom.name }}</h1>
+  <div id="chat-messages">
+    {% for message in messages %}
+      <p><strong>{{ message.user.username }}:</strong> {{ message.content }}</p>
+      <p>{{ message.timestamp }}</p>
+      <hr>
+    {% endfor %}
+  </div>
+  <form id="chat-form">
+    <input type="text" id="chat-message-input" required>
+    <button type="submit">Send</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const roomName = {{ chatroom.pk }};
+  const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+  );
+
+  chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    document.querySelector('#chat-messages').innerHTML += '<p><strong>' + data.username + ':</strong> ' + data.message + '</p>';
+  };
+
+  document.querySelector('#chat-form').onsubmit = function(e) {
+    e.preventDefault();
+    const messageInputDom = document.querySelector('#chat-message-input');
+    const message = messageInputDom.value;
+    chatSocket.send(JSON.stringify({
+      'message': message
+    }));
+    messageInputDom.value = '';
+  };
+</script>
+{% endblock %}
